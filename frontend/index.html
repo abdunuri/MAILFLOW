@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MailFlow – Smart Email Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors">
+
+<!-- ===== APP SHELL ===== -->
+<div id="app" class="flex h-full min-h-screen">
+
+  <!-- Sidebar -->
+  <aside id="sidebar"
+    class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col shadow-sm shrink-0">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-2 px-5 py-5 border-b border-gray-100 dark:border-gray-800">
+      <span class="text-2xl">✉️</span>
+      <span class="text-xl font-bold text-brand-600">MailFlow</span>
+      <span class="ml-auto text-xs bg-brand-100 text-brand-600 rounded-full px-2 py-0.5 font-semibold">BETA</span>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <button onclick="showPage('dashboard')" class="nav-item w-full" id="nav-dashboard">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Dashboard
+      </button>
+      <button onclick="showPage('inbox')" class="nav-item w-full" id="nav-inbox">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4"/>
+        </svg>
+        Inbox
+        <span id="unread-badge"
+          class="ml-auto bg-brand-500 text-white text-xs rounded-full px-2 py-0.5 hidden">0</span>
+      </button>
+      <button onclick="showPage('categories')" class="nav-item w-full" id="nav-categories">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+        </svg>
+        Categories
+      </button>
+      <button onclick="showPage('templates')" class="nav-item w-full" id="nav-templates">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Reply Templates
+      </button>
+    </nav>
+
+    <!-- Bottom actions -->
+    <div class="px-3 py-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
+      <button onclick="syncEmails()" id="sync-btn"
+        class="nav-item w-full text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Sync Inbox
+      </button>
+      <div id="auth-section"></div>
+      <button onclick="toggleDark()" class="nav-item w-full text-gray-500 dark:text-gray-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="theme-icon">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+        Toggle Dark Mode
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- Top bar -->
+    <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-3 flex items-center gap-3">
+      <h1 id="page-title" class="text-lg font-semibold flex-1">Dashboard</h1>
+      <span id="connection-status" class="text-xs font-medium px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">
+        Checking…
+      </span>
+    </header>
+
+    <!-- Pages -->
+    <div class="flex-1 overflow-y-auto p-6">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section id="page-dashboard">
+        <div id="connect-banner" class="hidden mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4 flex items-start gap-3">
+          <span class="text-amber-500 text-2xl mt-0.5">⚠️</span>
+          <div class="flex-1">
+            <p class="font-semibold text-amber-800 dark:text-amber-300">Connect your Gmail account</p>
+            <p class="text-sm text-amber-700 dark:text-amber-400 mt-1">
+              MailFlow needs access to your Gmail inbox.
+              Make sure you have placed <code>credentials.json</code> in the <code>backend/</code> folder.
+            </p>
+          </div>
+          <button onclick="gmailLogin()" class="btn-primary shrink-0">Connect Gmail</button>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div class="stat-card">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total Emails</p>
+            <p class="text-3xl font-bold mt-1" id="stat-total">–</p>
+          </div>
+          <div class="stat-card">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Unread</p>
+            <p class="text-3xl font-bold mt-1 text-brand-600" id="stat-unread">–</p>
+          </div>
+          <div class="stat-card">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Auto-Replied</p>
+            <p class="text-3xl font-bold mt-1 text-green-600" id="stat-replied">–</p>
+          </div>
+          <div class="stat-card">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Categories</p>
+            <p class="text-3xl font-bold mt-1 text-purple-600" id="stat-categories">–</p>
+          </div>
+        </div>
+
+        <!-- Category breakdown -->
+        <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+          <h2 class="font-semibold mb-4">Emails by Category</h2>
+          <div id="category-breakdown" class="space-y-3">
+            <p class="text-sm text-gray-400">No data yet – sync your inbox first.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== INBOX ===== -->
+      <section id="page-inbox" class="hidden">
+        <div class="flex items-center gap-3 mb-4">
+          <input id="search-input" type="text" placeholder="Search emails…"
+            oninput="filterEmails()"
+            class="input flex-1" />
+          <select id="filter-category" onchange="filterEmails()" class="input w-48">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+
+        <div id="email-list" class="space-y-2">
+          <p class="text-sm text-gray-400">Loading…</p>
+        </div>
+      </section>
+
+      <!-- ===== EMAIL DETAIL (inline) ===== -->
+      <section id="page-email-detail" class="hidden">
+        <button onclick="showPage('inbox')" class="flex items-center gap-1 text-sm text-brand-600 hover:underline mb-4">
+          ← Back to Inbox
+        </button>
+        <div id="email-detail-content" class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+        </div>
+      </section>
+
+      <!-- ===== CATEGORIES ===== -->
+      <section id="page-categories" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <p class="text-sm text-gray-500">Define rules to auto-categorise incoming emails.</p>
+          <button onclick="openCategoryModal()" class="btn-primary">+ New Category</button>
+        </div>
+        <div id="categories-list" class="space-y-3">
+          <p class="text-sm text-gray-400">Loading…</p>
+        </div>
+      </section>
+
+      <!-- ===== TEMPLATES ===== -->
+      <section id="page-templates" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <p class="text-sm text-gray-500">Create reply templates and enable auto-reply per category.</p>
+          <button onclick="openTemplateModal()" class="btn-primary">+ New Template</button>
+        </div>
+        <div id="templates-list" class="space-y-3">
+          <p class="text-sm text-gray-400">Loading…</p>
+        </div>
+      </section>
+
+    </div><!-- /page content -->
+  </main>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Category modal -->
+<div id="category-modal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <h2 class="text-lg font-bold mb-4" id="category-modal-title">New Category</h2>
+    <form id="category-form" onsubmit="saveCategory(event)" class="space-y-4">
+      <input type="hidden" id="cat-id" value="" />
+      <div>
+        <label class="label">Name *</label>
+        <input id="cat-name" type="text" class="input" placeholder="e.g. Work, Newsletter, Support" required />
+      </div>
+      <div>
+        <label class="label">Description</label>
+        <input id="cat-description" type="text" class="input" placeholder="Optional description" />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Badge color</label>
+          <input id="cat-color" type="color" value="#6366f1" class="h-10 w-full rounded cursor-pointer border border-gray-300 dark:border-gray-700" />
+        </div>
+        <div>
+          <label class="label">Priority (higher = first)</label>
+          <input id="cat-priority" type="number" class="input" value="0" min="0" />
+        </div>
+      </div>
+      <div>
+        <label class="label">Sender keywords <span class="text-gray-400 font-normal">(comma-separated)</span></label>
+        <input id="cat-sender" type="text" class="input" placeholder="noreply@, @github.com" />
+      </div>
+      <div>
+        <label class="label">Subject keywords</label>
+        <input id="cat-subject" type="text" class="input" placeholder="invoice, meeting, newsletter" />
+      </div>
+      <div>
+        <label class="label">Body keywords</label>
+        <input id="cat-body" type="text" class="input" placeholder="unsubscribe, confidential" />
+      </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" onclick="closeCategoryModal()" class="btn-ghost">Cancel</button>
+        <button type="submit" class="btn-primary">Save Category</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Template modal -->
+<div id="template-modal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <h2 class="text-lg font-bold mb-4" id="template-modal-title">New Reply Template</h2>
+    <form id="template-form" onsubmit="saveTemplate(event)" class="space-y-4">
+      <input type="hidden" id="tmpl-id" value="" />
+      <div>
+        <label class="label">Template name *</label>
+        <input id="tmpl-name" type="text" class="input" placeholder="e.g. Acknowledge support request" required />
+      </div>
+      <div>
+        <label class="label">Category *</label>
+        <select id="tmpl-category" class="input" required>
+          <option value="">Select a category…</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Subject prefix</label>
+        <input id="tmpl-subject-prefix" type="text" class="input" value="Re: " />
+      </div>
+      <div>
+        <label class="label">Reply body *</label>
+        <textarea id="tmpl-body" class="input h-36 resize-y" placeholder="Use {sender} and {subject} as placeholders." required></textarea>
+      </div>
+      <div class="flex items-center gap-2">
+        <input id="tmpl-auto" type="checkbox" class="w-4 h-4 accent-brand-500" />
+        <label for="tmpl-auto" class="text-sm">Auto-reply when a matching email arrives</label>
+      </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" onclick="closeTemplateModal()" class="btn-ghost">Cancel</button>
+        <button type="submit" class="btn-primary">Save Template</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Reply modal -->
+<div id="reply-modal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <h2 class="text-lg font-bold mb-1" id="reply-modal-subject">Reply</h2>
+    <p id="reply-modal-to" class="text-sm text-gray-500 mb-4"></p>
+    <input type="hidden" id="reply-gmail-id" value="" />
+    <div class="space-y-4">
+      <div>
+        <label class="label">Use template</label>
+        <select id="reply-template-select" class="input" onchange="onReplyTemplateChange()">
+          <option value="">Write manually…</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Subject</label>
+        <input id="reply-subject" type="text" class="input" />
+      </div>
+      <div>
+        <label class="label">Body</label>
+        <textarea id="reply-body" class="input h-32 resize-y"></textarea>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" onclick="closeReplyModal()" class="btn-ghost">Cancel</button>
+        <button onclick="sendReply()" class="btn-primary">Send Reply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="fixed bottom-5 right-5 z-50 hidden">
+  <div id="toast-inner" class="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 min-w-[200px]">
+    <span id="toast-icon">✓</span>
+    <span id="toast-msg"></span>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
