@@ -21,7 +21,7 @@ dotenv.load_dotenv()
 # If run from project root, also try backend/.env
 dotenv.load_dotenv(os.path.join(os.path.dirname(__file__), "backend", ".env"))
 
-from google import genai
+import google.generativeai as genai
 def _get_client():
     API_KEY = os.getenv("GEMINI_API_KEY")
     if not API_KEY:
