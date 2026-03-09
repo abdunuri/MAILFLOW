@@ -1,0 +1,11 @@
+.git
+.gitignore
+.mfenv
+.mfoenv
+__pycache__
+*.pyc
+
+backend/mailflow.db
+backend/token.json
+backend/credentials.json
+backend/.env

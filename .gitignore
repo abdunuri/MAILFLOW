@@ -46,3 +46,9 @@ logs/
 
 # Node (if any)
 node_modules/
+
+
+backend/mailflow.db
+backend/token.json
+backend/credentials.json
+backend/.env
