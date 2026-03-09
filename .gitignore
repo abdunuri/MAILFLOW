@@ -19,6 +19,7 @@ build/
 # Environment variables
 .env
 *.env
+.env.example
 
 # Google OAuth credentials (keep .example files)
 credentials.json
