@@ -9,9 +9,9 @@
 | Feature | Description |
 |---|---|
 | 📥 **Gmail Inbox Sync** | Fetches emails via the Gmail API (OAuth 2.0) |
-| 🏷️ **Smart Categorisation** | Rule-based engine (sender / subject / body keywords) with optional AI fallback via OpenAI |
-| 🤖 **Auto-Reply** | Pre-specified reply templates sent automatically when a matching email arrives |
-| ↩️ **Manual Reply** | Send a reply from a template or write a custom message directly in the UI |
+| 🏷️ **Smart Categorisation** | Rule-based engine (sender / subject / body keywords) with optional AI fallback via Google Gemini |
+| 🤖 **Auto-Reply** | Pre-specified reply templates or AI-generated replies when a matching email arrives |
+| ↩️ **Manual Reply** | Send a reply from a template, generate with AI, or write a custom message directly in the UI |
 | 📊 **Dashboard** | Stats overview and per-category email counts |
 | 🌙 **Dark Mode** | Persisted light/dark theme toggle |
 
@@ -25,6 +25,7 @@ MAILFLOW/
 │   ├── app.py              ← Flask REST API (entry point)
 │   ├── gmail_service.py    ← Gmail API integration & OAuth helpers
 │   ├── categorizer.py      ← Email categorisation engine
+│   ├── ai_service.py       ← Google Gemini AI (categorisation & reply generation)
 │   ├── replier.py          ← Auto-reply & manual reply logic
 │   ├── models.py           ← SQLAlchemy ORM models (SQLite by default)
 │   ├── config.py           ← Environment-based configuration
@@ -62,7 +63,7 @@ Create `backend/.env` and adjust as needed:
 SECRET_KEY=your-secret-key
 DEBUG=true
 DATABASE_URL=sqlite:///mailflow.db
-OPENAI_API_KEY=sk-...   # optional – enables AI-based categorisation fallback
+GEMINI_API_KEY=...      # optional – enables AI categorisation & AI-generated replies
 EMAIL_FETCH_LIMIT=50
 ```
 

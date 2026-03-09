@@ -2,11 +2,12 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from backend folder so it works regardless of where the app is run from
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 # Flask
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
-DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///mailflow.db")
@@ -29,8 +30,8 @@ GMAIL_SCOPES = [
     "https://www.googleapis.com/auth/gmail.modify",
 ]
 
-# OpenAI (optional – used for AI-powered categorisation when available)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+# Google Gemini (optional – used for AI-powered categorisation and reply generation)
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # Email fetch limits
 EMAIL_FETCH_LIMIT = int(os.getenv("EMAIL_FETCH_LIMIT", "50"))

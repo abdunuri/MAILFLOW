@@ -34,6 +34,7 @@ class Category(Base):
     subject_keywords = Column(Text, default="")  # match against Subject:
     body_keywords = Column(Text, default="")     # match against email body
     priority = Column(Integer, default=0)        # higher = evaluated first
+    use_ai_reply = Column(Boolean, default=False)  # AI generates reply when no template
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     emails = relationship(
@@ -56,6 +57,7 @@ class Category(Base):
             "subject_keywords": self.subject_keywords,
             "body_keywords": self.body_keywords,
             "priority": self.priority,
+            "use_ai_reply": self.use_ai_reply,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -155,6 +157,25 @@ def get_session():
     return _Session()
 
 
+def _migrate_add_use_ai_reply():
+    """Add use_ai_reply column to categories if it doesn't exist."""
+    engine = get_engine()
+    if "sqlite" not in config.DATABASE_URL:
+        return
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        try:
+            conn.execute(text(
+                "ALTER TABLE categories ADD COLUMN use_ai_reply BOOLEAN DEFAULT 0"
+            ))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            # Column likely already exists
+            pass
+
+
 def init_db():
     """Create all tables if they don't exist."""
     Base.metadata.create_all(get_engine())
+    _migrate_add_use_ai_reply()

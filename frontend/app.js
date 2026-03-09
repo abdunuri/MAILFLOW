@@ -18,6 +18,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.documentElement.classList.add("dark");
   }
 
+  // ESC key closes any open modal
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!document.getElementById("category-modal").classList.contains("hidden"))
+      closeCategoryModal();
+    else if (!document.getElementById("template-modal").classList.contains("hidden"))
+      closeTemplateModal();
+    else if (!document.getElementById("reply-modal").classList.contains("hidden"))
+      closeReplyModal();
+  });
+
   await checkAuth();
   await loadStats();
   await loadEmails();
@@ -306,6 +317,7 @@ function renderCategories() {
           ${c.sender_keywords ? `<span>📧 From: ${escHtml(c.sender_keywords)}</span>` : ""}
           ${c.subject_keywords ? `<span>📝 Subject: ${escHtml(c.subject_keywords)}</span>` : ""}
           ${c.body_keywords ? `<span>📄 Body: ${escHtml(c.body_keywords)}</span>` : ""}
+          ${c.use_ai_reply ? `<span class="text-brand-600 dark:text-brand-400">✨ AI Reply</span>` : ""}
         </div>
       </div>
       <div class="flex gap-2 shrink-0">
@@ -326,14 +338,17 @@ function openCategoryModal(cat = null) {
   document.getElementById("cat-sender").value = cat ? cat.sender_keywords : "";
   document.getElementById("cat-subject").value = cat ? cat.subject_keywords : "";
   document.getElementById("cat-body").value = cat ? cat.body_keywords : "";
+  document.getElementById("cat-use-ai-reply").checked = cat ? cat.use_ai_reply : false;
   document.getElementById("category-modal-title").textContent = cat
     ? "Edit Category"
     : "New Category";
   document.getElementById("category-modal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
 }
 
 function closeCategoryModal() {
   document.getElementById("category-modal").classList.add("hidden");
+  document.body.style.overflow = "";
 }
 
 function editCategory(id) {
@@ -365,6 +380,7 @@ async function saveCategory(event) {
     sender_keywords: document.getElementById("cat-sender").value,
     subject_keywords: document.getElementById("cat-subject").value,
     body_keywords: document.getElementById("cat-body").value,
+    use_ai_reply: document.getElementById("cat-use-ai-reply").checked,
   };
   const url = id ? `${API}/api/categories/${id}` : `${API}/api/categories`;
   const method = id ? "PUT" : "POST";
@@ -455,10 +471,12 @@ function openTemplateModal(tmpl = null) {
   populateCategorySelects();
   document.getElementById("tmpl-category").value = tmpl ? tmpl.category_id : "";
   document.getElementById("template-modal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
 }
 
 function closeTemplateModal() {
   document.getElementById("template-modal").classList.add("hidden");
+  document.body.style.overflow = "";
 }
 
 function editTemplate(id) {
@@ -528,10 +546,37 @@ function openReplyModal(gmailId, subject, sender) {
   sel.value = "";
 
   document.getElementById("reply-modal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+async function generateAiReply() {
+  const gmailId = document.getElementById("reply-gmail-id").value;
+  const btn = document.getElementById("reply-generate-ai-btn");
+  btn.disabled = true;
+  btn.textContent = "Generating…";
+  try {
+    const res = await fetch(`${API}/api/emails/${gmailId}/generate-reply`, {
+      method: "POST",
+    });
+    const data = await res.json();
+    if (res.ok && data.subject !== undefined) {
+      document.getElementById("reply-subject").value = data.subject;
+      document.getElementById("reply-body").value = data.body || "";
+      showToast("AI reply generated");
+    } else {
+      showToast(data.error || "AI generation failed", "error");
+    }
+  } catch (err) {
+    showToast("Error: " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "✨ Generate with AI";
+  }
 }
 
 function closeReplyModal() {
   document.getElementById("reply-modal").classList.add("hidden");
+  document.body.style.overflow = "";
 }
 
 function onReplyTemplateChange() {

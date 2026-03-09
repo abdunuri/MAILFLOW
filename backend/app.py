@@ -129,8 +129,35 @@ def sync_emails():
         return jsonify({"error": "Not authenticated. Please connect your Gmail account."}), 401
     session = get_session()
     try:
-        synced = _sync_emails(session)
-        return jsonify({"synced": synced, "message": f"Synced {synced} emails."})
+        result = _sync_emails(session)
+        synced = result["synced"]
+        msg = f"Synced {synced} emails."
+        if result.get("replies_sent"):
+            msg += f" {result['replies_sent']} auto-replies sent."
+        if result.get("reply_errors"):
+            msg += f" Errors: {'; '.join(result['reply_errors'][:3])}"
+        return jsonify({"synced": synced, "message": msg, **result})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+    finally:
+        session.close()
+
+
+@app.route("/api/emails/<gmail_id>/generate-reply", methods=["POST"])
+def generate_ai_reply(gmail_id):
+    """Generate an AI reply for an email. Returns subject and body."""
+    session = get_session()
+    try:
+        email = session.query(Email).filter_by(gmail_id=gmail_id).first()
+        if not email:
+            return jsonify({"error": "Email not found."}), 404
+        category_name = email.category.name if email.category else "General"
+        from ai_service import ai_generate_reply
+        result = ai_generate_reply(email.to_dict(), category_name)
+        if result[0] is None:
+            return jsonify({"error": result[1] or "AI reply generation failed."}), 503
+        subject, body = result
+        return jsonify({"subject": subject, "body": body})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
     finally:
@@ -221,6 +248,7 @@ def create_category():
             subject_keywords=data.get("subject_keywords", ""),
             body_keywords=data.get("body_keywords", ""),
             priority=int(data.get("priority", 0)),
+            use_ai_reply=bool(data.get("use_ai_reply", False)),
         )
         session.add(cat)
         session.commit()
@@ -246,6 +274,8 @@ def update_category(cat_id):
                 setattr(cat, field, data[field])
         if "priority" in data:
             cat.priority = int(data["priority"])
+        if "use_ai_reply" in data:
+            cat.use_ai_reply = bool(data["use_ai_reply"])
         session.commit()
         return jsonify(cat.to_dict())
     except Exception as exc:
@@ -390,12 +420,16 @@ def stats():
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _sync_emails(session) -> int:
-    """Fetch emails from Gmail, cache them, and apply categorisation."""
+def _sync_emails(session) -> dict:
+    """Fetch emails from Gmail, cache them, and apply categorisation.
+    Returns dict with synced count, replies_sent, and reply_errors.
+    """
     from gmail_service import list_emails
     email_list = list_emails()
     categories = session.query(Category).all()
     synced = 0
+    replies_sent = 0
+    reply_errors = []
     for email_data in email_list:
         existing = (
             session.query(Email)
@@ -418,12 +452,15 @@ def _sync_emails(session) -> int:
             category_id=cat.id if cat else None,
         )
         session.add(email_record)
-        # Trigger auto-reply if template says so
+        session.commit()  # Commit so auto_reply can mark email as replied
         if cat:
-            auto_reply(email_data, cat.id)
+            result = auto_reply(email_data, cat.id, session=session)
+            if result.get("sent"):
+                replies_sent += 1
+            elif result.get("message"):
+                reply_errors.append(f"{email_data.get('subject', '')[:30]}: {result['message']}")
         synced += 1
-    session.commit()
-    return synced
+    return {"synced": synced, "replies_sent": replies_sent, "reply_errors": reply_errors}
 
 
 # ---------------------------------------------------------------------------

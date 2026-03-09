@@ -47,13 +47,51 @@
          p-5 shadow-sm;
 }
 
-/* Modals */
+/* Modals - popup overlay (plain CSS for CDN compatibility) */
 .modal-backdrop {
-  @apply fixed inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: modalFadeIn 0.2s ease-out;
+}
+.modal-backdrop.hidden {
+  display: none !important;
 }
 .modal-box {
-  @apply bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg
-         border border-gray-200 dark:border-gray-700 p-6 max-h-[90vh] overflow-y-auto;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 32rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid rgb(229 231 235);
+  padding: 1.5rem;
+  animation: modalSlideIn 0.25s ease-out;
+}
+.dark .modal-box {
+  background: rgb(17 24 39);
+  border-color: rgb(55 65 81);
+}
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* Email list item */

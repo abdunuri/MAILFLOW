@@ -4,12 +4,10 @@ Rules are stored in the database.  Each Category has comma-separated keyword
 lists for sender, subject, and body matching.  The engine returns the
 highest-priority category whose rules match the email.
 
-Optionally, if an OpenAI API key is configured, an AI-based fallback can
+Optionally, if a Gemini API key is configured, an AI-based fallback can
 assign a category from the list when no rule matches.
 """
-import re
-
-import config
+from ai_service import ai_categorize as _ai_categorize
 
 
 def _keywords(raw: str) -> list[str]:
@@ -55,41 +53,13 @@ def categorize_email(email_data: dict, categories: list) -> object | None:
         if sender_match and subject_match and body_match:
             return cat
 
-    # AI-powered fallback (requires OPENAI_API_KEY)
-    if config.OPENAI_API_KEY:
-        return _ai_categorize(email_data, sorted_cats)
-
-    return None
-
-
-def _ai_categorize(email_data: dict, categories: list) -> object | None:
-    """Use OpenAI to assign one of the existing categories to an email."""
-    try:
-        from openai import OpenAI
-
-        client = OpenAI(api_key=config.OPENAI_API_KEY)
-        category_names = [c.name for c in categories]
-        prompt = (
-            "You are an email categorisation assistant.\n"
-            f"Available categories: {', '.join(category_names)}\n"
-            f"Email subject: {email_data.get('subject', '')}\n"
-            f"Email sender: {email_data.get('sender', '')}\n"
-            f"Email snippet: {email_data.get('snippet', '')[:300]}\n\n"
-            "Respond with ONLY the category name that best fits this email, "
-            "or 'None' if none apply."
-        )
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=20,
-            temperature=0,
-        )
-        chosen = response.choices[0].message.content.strip()
-        for cat in categories:
+    # AI-powered fallback (requires GEMINI_API_KEY)
+    category_names = [c.name for c in sorted_cats]
+    chosen = _ai_categorize(email_data, category_names)
+    if isinstance(chosen, str) and chosen:
+        for cat in sorted_cats:
             if cat.name.lower() == chosen.lower():
                 return cat
-    except Exception:
-        pass
     return None
 
 

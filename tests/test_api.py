@@ -64,6 +64,17 @@ def test_create_category(client):
     assert data["name"] == "Work"
     assert data["color"] == "#ff0000"
     assert data["priority"] == 2
+    assert data.get("use_ai_reply") is False
+
+
+def test_create_category_with_ai_reply(client):
+    res = client.post(
+        "/api/categories",
+        data=json.dumps({"name": "AI Support", "use_ai_reply": True}),
+        content_type="application/json",
+    )
+    assert res.status_code == 201
+    assert res.get_json()["use_ai_reply"] is True
 
 
 def test_create_category_missing_name(client):

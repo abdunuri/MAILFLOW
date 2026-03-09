@@ -12,6 +12,9 @@ ENV/
 dist/
 build/
 .eggs/
+.mfoenv/
+.mfenv/
+.pytest_cache/
 
 # Environment variables
 .env
